@@ -1,0 +1,22 @@
+services:
+    postgres-db:
+        image: postgres:17-alpine
+        container_name: trainme-db
+        ports:
+            - "5433:5432"
+        environment:
+            - POSTGRES_USER=trainme_user
+            - POSTGRES_PASSWORD=trainme_pass
+            - POSTGRES_DB=trainme_db
+        volumes:
+            - trainme_postgres_data:/var/lib/postgresql/data
+        networks:
+            - trainme-network
+        restart: unless-stopped
+    
+volumes:
+    trainme_postgres_data:
+
+networks:
+  trainme-network:
+    driver: bridge
