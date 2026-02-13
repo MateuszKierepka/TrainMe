@@ -1,43 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState, startTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import OAuthButtons from "@/components/auth/OAuthButtons";
+import { loginAction } from "@/actions/login";
+import { inputClassName } from "@/utils/styles";
+import type { AuthActionState } from "@/types/api";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function getInputClassName(touched: boolean, isValid: boolean, extra = "") {
-  const base = "block w-full rounded-lg border bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:ring-1 focus:outline-none";
-  const border = touched && !isValid
-    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-    : touched && isValid
-      ? "border-green-500 focus:border-green-500 focus:ring-green-500"
-      : "border-gray-300 focus:border-gray-900 focus:ring-gray-900";
-  return `${base} ${border} ${extra}`;
-}
-
 export default function LoginPage() {
+  const [actionState, formAction, isPending] = useActionState<AuthActionState, FormData>(
+    loginAction,
+    { success: false },
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [editedSinceAction, setEditedSinceAction] = useState<Set<string>>(new Set());
+  const [prevActionState, setPrevActionState] = useState(actionState);
+
+  if (actionState !== prevActionState) {
+    setPrevActionState(actionState);
+    setEditedSinceAction(new Set());
+
+    if (actionState.fieldErrors) {
+      const newTouched: Record<string, boolean> = {};
+      for (const field of Object.keys(actionState.fieldErrors)) {
+        newTouched[field] = true;
+      }
+      setTouched((prev) => ({ ...prev, ...newTouched }));
+    }
+  }
+
   const markTouched = (field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
+  const updateField = (field: string, value: string) => {
+    if (field === "email") setEmail(value);
+    if (field === "password") setPassword(value);
+    setEditedSinceAction((prev) => new Set(prev).add(field));
+  };
+
+  const serverErrors: Record<string, string> = {};
+  if (actionState.fieldErrors) {
+    for (const [key, value] of Object.entries(actionState.fieldErrors)) {
+      if (!editedSinceAction.has(key)) {
+        serverErrors[key] = value;
+      }
+    }
+  }
+
   const isEmailValid = EMAIL_REGEX.test(email);
   const isPasswordValid = password.length >= 1;
+
+  const clientErrors: Record<string, string> = {};
+  if (!isEmailValid) clientErrors.email = "Wprowadź poprawny adres e-mail";
+  if (!isPasswordValid) clientErrors.password = "Hasło jest wymagane";
+  const errors = { ...clientErrors, ...serverErrors };
+
+  const canSubmit = isEmailValid && isPasswordValid;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setTouched({ email: true, password: true });
-    if (!isEmailValid || !isPasswordValid) return;
-    // TODO: integrate with backend
+    if (!canSubmit) return;
+
+    const fd = new FormData();
+    fd.set("email", email);
+    fd.set("password", password);
+
+    startTransition(() => formAction(fd));
   };
 
   return (
     <div className="flex min-h-screen">
-      
+
       <div className="relative hidden w-1/2 lg:block">
         <Image
           src="/images/login.webp"
@@ -60,10 +101,10 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-      
+
       <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16">
         <div className="mx-auto w-full max-w-md">
-          
+
           <Link
             href="/"
             className="mb-8 block text-center text-2xl font-bold text-gray-900 lg:hidden"
@@ -78,8 +119,14 @@ export default function LoginPage() {
             Wprowadź swoje dane, aby uzyskać dostęp do konta
           </p>
 
+          {actionState.globalError && (
+            <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {actionState.globalError}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
-            
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Adres e-mail <span className="text-red-500">*</span>
@@ -90,14 +137,14 @@ export default function LoginPage() {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => updateField("email", e.target.value)}
                 onBlur={() => markTouched("email")}
                 placeholder="test@example.com"
-                className={getInputClassName(!!touched.email, isEmailValid, "mt-1.5")}
+                className={inputClassName(!!touched.email, !!errors.email, "mt-1.5")}
               />
-              {touched.email && !isEmailValid && (
+              {touched.email && errors.email && (
                 <p className="mt-1 text-xs text-red-500">
-                  Wprowadź poprawny adres e-mail
+                  {errors.email}
                 </p>
               )}
             </div>
@@ -113,10 +160,10 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => updateField("password", e.target.value)}
                   onBlur={() => markTouched("password")}
                   placeholder="Wprowadź hasło"
-                  className={getInputClassName(!!touched.password, isPasswordValid, "pr-12")}
+                  className={inputClassName(!!touched.password, !!errors.password, "pr-12")}
                 />
                 <button
                   type="button"
@@ -127,9 +174,9 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-              {touched.password && !isPasswordValid && (
+              {touched.password && errors.password && (
                 <p className="mt-1 text-xs text-red-500">
-                  Hasło jest wymagane
+                  {errors.password}
                 </p>
               )}
               <Link
@@ -142,10 +189,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={!isEmailValid || !isPasswordValid}
+              disabled={!canSubmit || isPending}
               className="w-full rounded-lg bg-gray-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-300"
             >
-              Zaloguj się
+              {isPending ? "Logowanie..." : "Zaloguj się"}
             </button>
           </form>
 

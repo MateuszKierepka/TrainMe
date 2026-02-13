@@ -19,9 +19,11 @@ public class TokenCleanupTask {
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void deleteExpiredTokens() {
-        int deleted = verificationTokenRepository.deleteAllExpiredBefore(LocalDateTime.now());
-        if (deleted > 0) {
-            log.info("Usunięto {} wygasłych tokenów", deleted);
+        LocalDateTime now = LocalDateTime.now();
+
+        int deletedVerification = verificationTokenRepository.deleteAllExpiredBefore(now);
+        if (deletedVerification > 0) {
+            log.info("Usunięto {} wygasłych tokenów weryfikacyjnych", deletedVerification);
         }
     }
 }

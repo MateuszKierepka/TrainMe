@@ -27,7 +27,7 @@ export default function HeroSection() {
         </p>
         <Link
           href="/register"
-          className="group mt-10 flex items-center justify-center gap-4 rounded-[5px] bg-transparent px-4 py-2.5 outline-[3px] outline-white -outline-offset-[3px] transition-all duration-400 hover:bg-white"
+          className="group mt-10 flex items-center justify-center gap-4 rounded-[5px] border-2 border-white/30 bg-transparent px-4 py-2.5 transition-all duration-400 hover:border-white hover:bg-white"
         >
           <span className="font-bold text-white transition-all duration-400 group-hover:text-black">
             Dołącz do nas

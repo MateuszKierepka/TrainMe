@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import LogoutButton from "@/components/auth/LogoutButton";
+import { logoutAction } from "@/actions/logout";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { href: "/", label: "Strona główna" },
@@ -12,6 +15,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [onVideo, setOnVideo] = useState(true);
 
@@ -80,26 +84,32 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/login"
-              className={`rounded-lg px-4 py-2 text-sm font-medium border transition-all duration-500 ${
-                onVideo
-                  ? "text-white border-white/30 hover:bg-white/20 hover:border-white"
-                  : "text-gray-900 border-gray-300 hover:bg-gray-900/10 hover:border-gray-900"
-              }`}
-            >
-              Zaloguj się
-            </Link>
-            <Link
-              href="/register"
-              className={`rounded-lg px-4 py-2 text-sm font-medium border transition-all duration-500 ${
-                onVideo
-                  ? "bg-white text-black border-white hover:bg-white/60 hover:border-white/60"
-                  : "bg-gray-900 text-white border-gray-900 hover:bg-gray-600 hover:border-gray-600"
-              }`}
-            >
-              Zarejestruj się
-            </Link>
+            {user ? (
+              <LogoutButton onVideo={onVideo} />
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className={`rounded-lg px-4 py-2 text-sm font-medium border transition-all duration-500 ${
+                    onVideo
+                      ? "text-white border-white/30 hover:bg-white/20 hover:border-white"
+                      : "text-gray-900 border-gray-300 hover:bg-gray-900/10 hover:border-gray-900"
+                  }`}
+                >
+                  Zaloguj się
+                </Link>
+                <Link
+                  href="/register"
+                  className={`rounded-lg px-4 py-2 text-sm font-medium border transition-all duration-500 ${
+                    onVideo
+                      ? "bg-white text-black border-white hover:bg-white/60 hover:border-white/60"
+                      : "bg-gray-900 text-white border-gray-900 hover:bg-gray-600 hover:border-gray-600"
+                  }`}
+                >
+                  Zarejestruj się
+                </Link>
+              </>
+            )}
           </div>
 
           <button
@@ -143,28 +153,46 @@ export default function Navbar() {
                 onVideo ? "border-white/10" : "border-gray-200"
               }`}
             >
-              <Link
-                href="/login"
-                className={`block rounded-lg px-3 py-2 text-center text-sm font-medium border transition-all ${
-                  onVideo
-                    ? "text-white border-white/30 hover:bg-white/20 hover:border-white"
-                    : "text-gray-900 border-gray-300 hover:bg-gray-900/10 hover:border-gray-900"
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Zaloguj się
-              </Link>
-              <Link
-                href="/register"
-                className={`block rounded-lg px-3 py-2 text-center text-sm font-medium border transition-all ${
-                  onVideo
-                    ? "bg-white text-black border-white hover:bg-white/60 hover:border-white/60"
-                    : "bg-gray-900 text-white border-gray-900 hover:bg-gray-600 hover:border-gray-600"
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Zarejestruj się
-              </Link>
+              {user ? (
+                <form action={logoutAction}>
+                  <button
+                    type="submit"
+                    className={`block w-full rounded-lg px-3 py-2 text-center text-sm font-medium border transition-all ${
+                      onVideo
+                        ? "text-white border-white/30 hover:bg-white/20 hover:border-white"
+                        : "text-gray-900 border-gray-300 hover:bg-gray-900/10 hover:border-gray-900"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Wyloguj się
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className={`block rounded-lg px-3 py-2 text-center text-sm font-medium border transition-all ${
+                      onVideo
+                        ? "text-white border-white/30 hover:bg-white/20 hover:border-white"
+                        : "text-gray-900 border-gray-300 hover:bg-gray-900/10 hover:border-gray-900"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Zaloguj się
+                  </Link>
+                  <Link
+                    href="/register"
+                    className={`block rounded-lg px-3 py-2 text-center text-sm font-medium border transition-all ${
+                      onVideo
+                        ? "bg-white text-black border-white hover:bg-white/60 hover:border-white/60"
+                        : "bg-gray-900 text-white border-gray-900 hover:bg-gray-600 hover:border-gray-600"
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Zarejestruj się
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
