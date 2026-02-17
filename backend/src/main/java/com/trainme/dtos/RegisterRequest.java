@@ -57,6 +57,6 @@ public record RegisterRequest(
         String lastName,
 
         @NotBlank(message = "Numer telefonu jest wymagany")
-        @Pattern(regexp = "^\\d{9}$", message = "Numer telefonu musi mieć dokładnie 9 cyfr")
+        @Pattern(regexp = "^\\+[1-9]\\d{6,14}$", message = "Numer telefonu musi być w formacie +48123456789)")
         String phoneNumber
 ) {}

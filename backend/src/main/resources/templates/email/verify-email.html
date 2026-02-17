@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Potwierdź adres e-mail powiązany z Twoim kontem TrainMe</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f3f4f6; padding: 40px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%;">
+
+                    <tr>
+                        <td align="center" style="background: linear-gradient(135deg, #000000 0%, #1a1a2e 50%, #16213e 100%); padding: 32px 40px;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">TrainMe</h1>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="background-color: #ffffff; padding: 40px;">
+                            <h2 style="margin: 0 0 16px; font-size: 22px; font-weight: 700; color: #000000; text-align: center;">
+                                Potwierdź adres e-mail
+                            </h2>
+
+                            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 0 0 24px;" />
+
+                            <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.6; color: #000000;">
+                                Cześć, <span th:text="${firstName}">Jan</span>!
+                            </p>
+                            <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: #000000;">
+                                Dziękujemy za rejestrację w TrainMe. Aby dokończyć proces tworzenia konta, potwierdź swój adres e-mail klikając poniższy przycisk.
+                            </p>
+
+                            <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+                                <tr>
+                                    <td align="center" style="background-color: #111827; border-radius: 8px;">
+                                        <a th:href="${link}" target="_blank"
+                                           style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none;">
+                                            Potwierdź adres e-mail
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 28px 0 0; font-size: 13px; line-height: 1.5; color: #000000;">
+                                Jeśli przycisk nie działa, skopiuj i wklej poniższy link w przeglądarkę:
+                            </p>
+                            <p style="margin: 4px 0 0; font-size: 13px; line-height: 1.5; word-break: break-all;">
+                                <a th:href="${link}" th:text="${link}" style="color: #6b7280;">link</a>
+                            </p>
+
+                            <p style="margin: 24px 0 0; font-size: 13px; color: #000000;">
+                                Link jest ważny przez 24 godziny i może zostać użyty tylko raz.
+                            </p>
+
+                            <p style="margin: 24px 0 0; font-size: 13px; line-height: 1.6; color: #000000;">
+                                Jeśli próba weryfikacji adresu e-mail powiązanego z Twoim kontem TrainMe nie była podejmowana przez Ciebie lub podejrzewasz, że do Twojego konta mogła uzyskać dostęp niepowołana osoba, zignoruj wiadomość lub <a href="https://trainme.pl/contact" style="color: #6b7280;">poinformuj nas o tym</a>.
+                            </p>
+
+                            <p style="margin: 28px 0 0; font-size: 15px; line-height: 1.6; color: #000000;">
+                                Pozdrawiamy,<br />
+                                Zespół TrainMe
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #000000 0%, #1a1a2e 50%, #16213e 100%); padding: 24px 40px;">
+                            <p style="margin: 0; font-size: 12px; color: #ffffff; text-align: center;">
+                                &copy; 2026 TrainMe. Wszelkie prawa zastrzeżone.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

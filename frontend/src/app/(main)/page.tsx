@@ -1,4 +1,3 @@
-import Navbar from "@/components/layout/Navbar";
 import HeroSection from "@/components/home/HeroSection";
 import HowItWorks from "@/components/home/HowItWorks";
 import MotivationSection from "@/components/home/MotivationSection";
@@ -8,17 +7,14 @@ import SectionScroll from "@/components/home/SectionScroll";
 
 export default function Home() {
   return (
-    <>
-      <Navbar />
-      <SectionScroll>
-        <HeroSection />
-        <HowItWorks />
-        <MotivationSection />
-        <div className="h-screen flex flex-col pt-24 bg-gray-100">
-          <WhyUs />
-          <Footer />
-        </div>
-      </SectionScroll>
-    </>
+    <SectionScroll>
+      <HeroSection />
+      <HowItWorks />
+      <MotivationSection />
+      <div className="h-screen flex flex-col pt-24 bg-gray-100">
+        <WhyUs />
+        <Footer />
+      </div>
+    </SectionScroll>
   );
 }

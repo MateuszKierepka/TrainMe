@@ -18,14 +18,14 @@ import java.util.function.Function;
 public class JwtService {
 
     private final SecretKey signingKey;
-    private final long expirationMs;
+    private final long tokenExpirationMs;
 
     public JwtService(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration-ms}") long expirationMs
+            @Value("${jwt.token-expiration-ms}") long tokenExpirationMs
     ) {
         this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
-        this.expirationMs = expirationMs;
+        this.tokenExpirationMs = tokenExpirationMs;
     }
 
     public String generateToken(UserDetails userDetails, Map<String, Object> extraClaims) {
@@ -34,7 +34,7 @@ public class JwtService {
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(now)
-                .expiration(new Date(now.getTime() + expirationMs))
+                .expiration(new Date(now.getTime() + tokenExpirationMs))
                 .signWith(signingKey)
                 .compact();
     }

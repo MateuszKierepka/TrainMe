@@ -3,11 +3,11 @@ package com.trainme.controllers;
 import com.trainme.dtos.AuthResponse;
 import com.trainme.dtos.ForgotPasswordRequest;
 import com.trainme.dtos.LoginRequest;
+import com.trainme.dtos.LoginResponse;
 import com.trainme.dtos.RegisterRequest;
 import com.trainme.dtos.ResetPasswordRequest;
 import com.trainme.security.CustomUserDetails;
 import com.trainme.services.AuthService;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,25 +34,13 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
-        return ResponseEntity.ok(authService.login(request, response));
-    }
-
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletResponse response) {
-        authService.logout(response);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/verify-email")
     public ResponseEntity<Void> verifyEmail(@RequestParam String token) {
         authService.verifyEmail(token);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/resend-verification")
-    public ResponseEntity<Void> resendVerification(@RequestParam String email) {
-        authService.resendVerificationEmail(email);
         return ResponseEntity.ok().build();
     }
 

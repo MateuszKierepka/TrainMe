@@ -1,16 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff, Dumbbell, User, ChevronDown } from "lucide-react";
 import { getCountries, getCountryCallingCode } from "libphonenumber-js";
 import OAuthButtons from "@/components/auth/OAuthButtons";
 import StepIndicator from "@/components/auth/StepIndicator";
+import { registerAction } from "@/actions/register";
+import { inputClassName } from "@/utils/styles";
+import type { AuthActionState } from "@/types/api";
 
 type Role = "CLIENT" | "TRAINER" | null;
 
-interface FormData {
+interface RegisterFormData {
   role: Role;
   email: string;
   password: string;
@@ -19,10 +23,21 @@ interface FormData {
   lastName: string;
   countryCode: string;
   phone: string;
-  bio: string;
+  dateOfBirth: string;
 }
 
-const INITIAL_FORM_DATA: FormData = {
+const FIELD_STEP: Record<string, number> = {
+  role: 1,
+  email: 2,
+  password: 2,
+  confirmPassword: 2,
+  firstName: 3,
+  lastName: 3,
+  phone: 3,
+  dateOfBirth: 3,
+};
+
+const INITIAL_FORM_DATA: RegisterFormData = {
   role: null,
   email: "",
   password: "",
@@ -31,24 +46,27 @@ const INITIAL_FORM_DATA: FormData = {
   lastName: "",
   countryCode: "PL",
   phone: "",
-  bio: "",
+  dateOfBirth: "",
 };
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
-const NAME_REGEX = /^[A-ZŁŚŹŻĆŃÓĘ][a-złśźżćńóę]*$/;
+const FIRST_NAME_REGEX = /^[A-ZŁŚŹŻĆŃÓĘ][a-złśźżćńóęA-ZŁŚŹŻĆŃÓĘ]*$/;
+const LAST_NAME_REGEX = /^[A-ZŁŚŹŻĆŃÓĘ][a-złśźżćńóęA-ZŁŚŹŻĆŃÓĘ-]*$/;
 const PHONE_REGEX = /^\d{9}$/;
-const countryNames = new Intl.DisplayNames(["pl"], { type: "region" });
+const TODAY = new Date();
+TODAY.setHours(0, 0, 0, 0);
+const DATE_MIN = new Date(TODAY.getFullYear() - 100, TODAY.getMonth(), TODAY.getDate()).toISOString().split("T")[0];
+const DATE_MAX = new Date(TODAY.getFullYear() - 18, TODAY.getMonth(), TODAY.getDate()).toISOString().split("T")[0];
 const COUNTRY_CODES = getCountries()
   .map((iso) => ({
     iso,
     callingCode: `+${getCountryCallingCode(iso)}`,
-    name: countryNames.of(iso) ?? iso,
   }))
   .sort((a, b) => parseInt(a.callingCode) - parseInt(b.callingCode));
 
-type FieldErrors = Partial<Record<keyof FormData, string>>;
+type FieldErrors = Partial<Record<keyof RegisterFormData, string>>;
 
-function validateStep2(data: FormData): FieldErrors {
+function validateStep2(data: RegisterFormData): FieldErrors {
   const errors: FieldErrors = {};
 
   if (!EMAIL_REGEX.test(data.email)) {
@@ -57,36 +75,35 @@ function validateStep2(data: FormData): FieldErrors {
   if (!PASSWORD_REGEX.test(data.password)) {
     errors.password = "Min. 8 znaków, 1 duża litera, 1 mała litera, 1 cyfra, 1 znak specjalny";
   }
-  if (data.confirmPassword !== data.password) {
-    errors.confirmPassword = "Hasła nie są identyczne";
-  }
   if (data.confirmPassword.length === 0) {
     errors.confirmPassword = "Potwierdzenie hasła jest wymagane";
+  } else if (data.confirmPassword !== data.password) {
+    errors.confirmPassword = "Hasła nie są identyczne";
   }
   return errors;
 }
 
-function validateStep3(data: FormData): FieldErrors {
+function validateStep3(data: RegisterFormData): FieldErrors {
   const errors: FieldErrors = {};
 
   if (data.firstName.trim().length === 0) {
     errors.firstName = "Imię jest wymagane";
-  } else if (data.firstName.length < 3) {
-    errors.firstName = "Imię musi mieć minimum 3 znaki";
-  } else if (data.firstName.length > 15) {
-    errors.firstName = "Imię może mieć maksymalnie 15 znaków";
-  } else if (!NAME_REGEX.test(data.firstName)) {
-    errors.firstName = "Imię musi zaczynać się od dużej litery";
+  } else if (data.firstName.length < 2) {
+    errors.firstName = "Imię musi mieć minimum 2 znaki";
+  } else if (data.firstName.length > 20) {
+    errors.firstName = "Imię musi mieć maksymalnie 20 znaków";
+  } else if (!FIRST_NAME_REGEX.test(data.firstName)) {
+    errors.firstName = "Imię musi zaczynać się od dużej litery i zawierać tylko litery";
   }
 
   if (data.lastName.trim().length === 0) {
     errors.lastName = "Nazwisko jest wymagane";
-  } else if (data.lastName.length < 3) {
-    errors.lastName = "Nazwisko musi mieć minimum 3 znaki";
-  } else if (data.lastName.length > 25) {
-    errors.lastName = "Nazwisko może mieć maksymalnie 25 znaków";
-  } else if (!NAME_REGEX.test(data.lastName)) {
-    errors.lastName = "Nazwisko musi zaczynać się od dużej litery";
+  } else if (data.lastName.length < 2) {
+    errors.lastName = "Nazwisko musi mieć minimum 2 znaki";
+  } else if (data.lastName.length > 35) {
+    errors.lastName = "Nazwisko musi mieć maksymalnie 35 znaków";
+  } else if (!LAST_NAME_REGEX.test(data.lastName)) {
+    errors.lastName = "Nazwisko musi zaczynać się od dużej litery i zawierać tylko litery lub myślnik";
   }
 
   const digitsOnly = data.phone.replace(/\s/g, "");
@@ -96,47 +113,97 @@ function validateStep3(data: FormData): FieldErrors {
     errors.phone = "Numer telefonu musi mieć dokładnie 9 cyfr";
   }
 
+  if (data.dateOfBirth.length === 0) {
+    errors.dateOfBirth = "Data urodzenia jest wymagana";
+  } else {
+    const birthDate = new Date(data.dateOfBirth);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (birthDate >= today) {
+      errors.dateOfBirth = "Data urodzenia musi być w przeszłości";
+    } else {
+      const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+      const hundredYearsAgo = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+      if (birthDate > eighteenYearsAgo) {
+        errors.dateOfBirth = "Musisz mieć ukończone 18 lat";
+      } else if (birthDate < hundredYearsAgo) {
+        errors.dateOfBirth = "Musisz mieć maksymalnie 100 lat";
+      }
+    }
+  }
+
   return errors;
 }
 
-function inputCls(touched: boolean, hasError: boolean, extra = "") {
-  const base = "block w-full rounded-lg border bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:ring-1 focus:outline-none";
-  const border = touched && hasError
-    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-    : touched && !hasError
-      ? "border-green-500 focus:border-green-500 focus:ring-green-500"
-      : "border-gray-300 focus:border-gray-900 focus:ring-gray-900";
-  return `${base} ${border} ${extra}`;
-}
-
-function formatName(value: string, maxLen: number): string {
-  const cleaned = value.replace(/[^a-zA-ZłśźżćńóęŁŚŹŻĆŃÓĘ]/g, "");
+function formatName(value: string, maxLen: number, allowHyphen = false): string {
+  const pattern = allowHyphen
+    ? /[^a-zA-ZłśźżćńóęŁŚŹŻĆŃÓĘ-]/g
+    : /[^a-zA-ZłśźżćńóęŁŚŹŻĆŃÓĘ]/g;
+  const cleaned = value.replace(pattern, "");
   const trimmed = cleaned.slice(0, maxLen);
   if (trimmed.length === 0) return "";
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 }
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const lastStepChange = useRef(0);
+  const [isPending, setIsPending] = useState(false);
+  const [actionState, setActionState] = useState<AuthActionState>({ success: false });
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState<RegisterFormData>(INITIAL_FORM_DATA);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [editedSinceAction, setEditedSinceAction] = useState<Set<string>>(new Set());
+  const [prevActionState, setPrevActionState] = useState(actionState);
   const totalSteps = 3;
+
+  if (actionState !== prevActionState) {
+    setPrevActionState(actionState);
+    setEditedSinceAction(new Set());
+
+    if (actionState.fieldErrors) {
+      const errorFields = Object.keys(actionState.fieldErrors);
+      const earliestStep = Math.min(...errorFields.map((f) => FIELD_STEP[f] ?? 3));
+      if (earliestStep < step) {
+        setStep(earliestStep);
+      }
+      const newTouched: Record<string, boolean> = {};
+      for (const field of errorFields) {
+        newTouched[field] = true;
+      }
+      setTouched((prev) => ({ ...prev, ...newTouched }));
+    }
+  }
+
   const markTouched = (field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
-  const updateField = <K extends keyof FormData>(
+  const updateField = <K extends keyof RegisterFormData>(
     field: K,
-    value: FormData[K],
+    value: RegisterFormData[K],
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setEditedSinceAction((prev) => new Set(prev).add(field));
   };
-  const stepErrors: FieldErrors = step === 2
-    ? validateStep2(formData)
-    : step === 3
-      ? validateStep3(formData)
-      : {};
+
+  const serverErrors: FieldErrors = {};
+  if (actionState.fieldErrors) {
+    for (const [key, value] of Object.entries(actionState.fieldErrors)) {
+      if (!editedSinceAction.has(key)) {
+        serverErrors[key as keyof RegisterFormData] = value;
+      }
+    }
+  }
+  const clientErrors: FieldErrors = {
+    ...(step === 2
+      ? validateStep2(formData)
+      : step === 3
+        ? validateStep3(formData)
+        : {}),
+    ...serverErrors,
+  };
   const canGoNext = (): boolean => {
     switch (step) {
       case 1:
@@ -158,31 +225,58 @@ export default function RegisterPage() {
         confirmPassword: true,
       }));
     }
-    if (step === 3) {
-      setTouched((prev) => ({
-        ...prev,
-        firstName: true,
-        lastName: true,
-        phone: true,
-      }));
-    }
     if (canGoNext() && step < totalSteps) {
       setStep(step + 1);
+      lastStepChange.current = Date.now();
     }
   };
   const handleBack = () => {
     if (step > 1) setStep(step - 1);
   };
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitRegistration = async () => {
+    if (step !== totalSteps || isPending) return;
+    if (Date.now() - lastStepChange.current < 300) return;
+
     setTouched((prev) => ({
       ...prev,
       firstName: true,
       lastName: true,
       phone: true,
+      dateOfBirth: true,
     }));
     if (!canGoNext()) return;
-    // TODO: integrate with backend
+
+    const fd = new FormData();
+    fd.set("role", formData.role ?? "");
+    fd.set("email", formData.email);
+    fd.set("password", formData.password);
+    fd.set("confirmPassword", formData.confirmPassword);
+    fd.set("firstName", formData.firstName);
+    fd.set("lastName", formData.lastName);
+    fd.set("countryCode", formData.countryCode);
+    fd.set("phone", formData.phone);
+    fd.set("dateOfBirth", formData.dateOfBirth);
+
+    setIsPending(true);
+    try {
+      const result = await registerAction(fd);
+      if (result.success) {
+        router.push("/register/success");
+        return;
+      }
+      setActionState(result);
+    } catch {
+      setActionState({
+        success: false,
+        globalError: "Nie udało się połączyć z serwerem. Spróbuj ponownie później.",
+      });
+    } finally {
+      setIsPending(false);
+    }
+  };
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitRegistration();
   };
 
   return (
@@ -236,7 +330,13 @@ export default function RegisterPage() {
             <StepIndicator currentStep={step} totalSteps={totalSteps} />
           </div>
 
-          <form onSubmit={handleSubmit} noValidate>
+          {actionState.globalError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {actionState.globalError}
+            </div>
+          )}
+
+          <form onSubmit={handleFormSubmit} noValidate>
 
             {step === 1 && (
               <div className="space-y-4">
@@ -316,15 +416,15 @@ export default function RegisterPage() {
                     onChange={(e) => updateField("email", e.target.value)}
                     onBlur={() => markTouched("email")}
                     placeholder="test@example.com"
-                    className={inputCls(
+                    className={inputClassName(
                       !!touched.email,
-                      !!stepErrors.email,
+                      !!clientErrors.email,
                       "mt-1.5",
                     )}
                   />
-                  {touched.email && stepErrors.email && (
+                  {touched.email && clientErrors.email && (
                     <p className="mt-1 text-xs text-red-500">
-                      {stepErrors.email}
+                      {clientErrors.email}
                     </p>
                   )}
                 </div>
@@ -346,9 +446,9 @@ export default function RegisterPage() {
                       onChange={(e) => updateField("password", e.target.value)}
                       onBlur={() => markTouched("password")}
                       placeholder="Min. 8 znaków"
-                      className={inputCls(
+                      className={inputClassName(
                         !!touched.password,
-                        !!stepErrors.password,
+                        !!clientErrors.password,
                         "pr-12",
                       )}
                     />
@@ -367,9 +467,9 @@ export default function RegisterPage() {
                       )}
                     </button>
                   </div>
-                  {touched.password && stepErrors.password && (
+                  {touched.password && clientErrors.password && (
                     <p className="mt-1 text-xs text-red-500">
-                      {stepErrors.password}
+                      {clientErrors.password}
                     </p>
                   )}
                 </div>
@@ -393,9 +493,9 @@ export default function RegisterPage() {
                       }
                       onBlur={() => markTouched("confirmPassword")}
                       placeholder="Powtórz hasło"
-                      className={inputCls(
+                      className={inputClassName(
                         !!touched.confirmPassword,
-                        !!stepErrors.confirmPassword,
+                        !!clientErrors.confirmPassword,
                         "pr-12",
                       )}
                     />
@@ -416,9 +516,9 @@ export default function RegisterPage() {
                       )}
                     </button>
                   </div>
-                  {touched.confirmPassword && stepErrors.confirmPassword && (
+                  {touched.confirmPassword && clientErrors.confirmPassword && (
                     <p className="mt-1 text-xs text-red-500">
-                      {stepErrors.confirmPassword}
+                      {clientErrors.confirmPassword}
                     </p>
                   )}
                 </div>
@@ -449,22 +549,22 @@ export default function RegisterPage() {
                       type="text"
                       autoComplete="given-name"
                       required
-                      maxLength={15}
+                      maxLength={20}
                       value={formData.firstName}
                       onChange={(e) =>
-                        updateField("firstName", formatName(e.target.value, 15))
+                        updateField("firstName", formatName(e.target.value, 20))
                       }
                       onBlur={() => markTouched("firstName")}
                       placeholder="Jan"
-                      className={inputCls(
+                      className={inputClassName(
                         !!touched.firstName,
-                        !!stepErrors.firstName,
+                        !!clientErrors.firstName,
                         "mt-1.5",
                       )}
                     />
-                    {touched.firstName && stepErrors.firstName && (
+                    {touched.firstName && clientErrors.firstName && (
                       <p className="mt-1 text-xs text-red-500">
-                        {stepErrors.firstName}
+                        {clientErrors.firstName}
                       </p>
                     )}
                   </div>
@@ -481,22 +581,22 @@ export default function RegisterPage() {
                       type="text"
                       autoComplete="family-name"
                       required
-                      maxLength={25}
+                      maxLength={35}
                       value={formData.lastName}
                       onChange={(e) =>
-                        updateField("lastName", formatName(e.target.value, 25))
+                        updateField("lastName", formatName(e.target.value, 35, true))
                       }
                       onBlur={() => markTouched("lastName")}
                       placeholder="Kowalski"
-                      className={inputCls(
+                      className={inputClassName(
                         !!touched.lastName,
-                        !!stepErrors.lastName,
+                        !!clientErrors.lastName,
                         "mt-1.5",
                       )}
                     />
-                    {touched.lastName && stepErrors.lastName && (
+                    {touched.lastName && clientErrors.lastName && (
                       <p className="mt-1 text-xs text-red-500">
-                        {stepErrors.lastName}
+                        {clientErrors.lastName}
                       </p>
                     )}
                   </div>
@@ -542,41 +642,49 @@ export default function RegisterPage() {
                       }}
                       onBlur={() => markTouched("phone")}
                       placeholder="123456789"
-                      className={inputCls(
+                      className={inputClassName(
                         !!touched.phone,
-                        !!stepErrors.phone,
+                        !!clientErrors.phone,
                         "flex-1",
                       )}
                     />
                   </div>
-                  {touched.phone && stepErrors.phone && (
+                  {touched.phone && clientErrors.phone && (
                     <p className="mt-1 text-xs text-red-500">
-                      {stepErrors.phone}
+                      {clientErrors.phone}
                     </p>
                   )}
                 </div>
 
-                {formData.role === "TRAINER" && (
-                  <div>
-                    <label
-                      htmlFor="bio"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      O mnie
-                    </label>
-                    <textarea
-                      id="bio"
-                      rows={4}
-                      value={formData.bio}
-                      onChange={(e) => updateField("bio", e.target.value)}
-                      placeholder="Opowiedz krótko o sobie, swoim doświadczeniu i stylu treningów..."
-                      className="mt-1.5 block w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
-                    />
-                    <p className="mt-1 text-xs text-gray-400">
-                      Opcjonalne — możesz uzupełnić później
+                <div>
+                  <label
+                    htmlFor="dateOfBirth"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Data urodzenia <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="dateOfBirth"
+                    type="date"
+                    autoComplete="bday"
+                    required
+                    min={DATE_MIN}
+                    max={DATE_MAX}
+                    value={formData.dateOfBirth}
+                    onChange={(e) => updateField("dateOfBirth", e.target.value)}
+                    onBlur={() => markTouched("dateOfBirth")}
+                    className={inputClassName(
+                      !!touched.dateOfBirth,
+                      !!clientErrors.dateOfBirth,
+                      "mt-1.5",
+                    )}
+                  />
+                  {touched.dateOfBirth && clientErrors.dateOfBirth && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {clientErrors.dateOfBirth}
                     </p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
@@ -585,30 +693,25 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="rounded-lg border border-gray-300 px-4 py-3 text-sm font-medium text-gray-700 transition-all hover:border-gray-900 hover:bg-gray-100 hover:shadow-sm"
+                  disabled={isPending}
+                  className="rounded-lg border border-gray-300 px-4 py-3 text-sm font-medium text-gray-700 transition-all hover:border-gray-900 hover:bg-gray-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Wstecz
                 </button>
               )}
 
-              {step < totalSteps ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={!canGoNext()}
-                  className="flex-1 rounded-lg bg-gray-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                >
-                  Dalej
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={!canGoNext()}
-                  className="flex-1 rounded-lg bg-gray-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                >
-                  Zarejestruj się
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={step < totalSteps ? handleNext : submitRegistration}
+                disabled={!canGoNext() || isPending}
+                className="flex-1 rounded-lg bg-gray-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+              >
+                {step < totalSteps
+                  ? "Dalej"
+                  : isPending
+                    ? "Rejestracja..."
+                    : "Zarejestruj się"}
+              </button>
             </div>
           </form>
 

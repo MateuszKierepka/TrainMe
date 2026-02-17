@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<ApiErrorResponse> handleDisabled(DisabledException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ApiErrorResponse(403, "Konto nie zostało zweryfikowane. Sprawdź swoją skrzynkę e-mail"));
+                .body(new ApiErrorResponse(403, "Konto nie zostało zweryfikowane. Sprawdź skrzynkę e-mail i zweryfikuj konto"));
     }
 
     @ExceptionHandler(LockedException.class)
@@ -73,5 +73,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleAccountExpired(AccountExpiredException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ApiErrorResponse(403, "Konto zostało dezaktywowane"));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiErrorResponse(500, "Wystąpił nieoczekiwany błąd. Spróbuj ponownie później."));
     }
 }

@@ -3,6 +3,7 @@ package com.trainme.services;
 import com.trainme.dtos.AuthResponse;
 import com.trainme.dtos.ForgotPasswordRequest;
 import com.trainme.dtos.LoginRequest;
+import com.trainme.dtos.LoginResponse;
 import com.trainme.dtos.RegisterRequest;
 import com.trainme.dtos.ResetPasswordRequest;
 import com.trainme.entities.TrainerProfile;
@@ -19,8 +20,6 @@ import com.trainme.repositories.UserRepository;
 import com.trainme.repositories.VerificationTokenRepository;
 import com.trainme.security.CustomUserDetails;
 import com.trainme.security.JwtService;
-import com.trainme.security.CookieService;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,7 +27,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,14 +43,24 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    private final CookieService cookieService;
     private final EmailService emailService;
     private final UserMapper userMapper;
 
     @Transactional
     public void register(RegisterRequest request) {
+        if (request.role() == UserRole.ADMIN) {
+            throw new IllegalArgumentException("Nieprawidłowa rola użytkownika");
+        }
+
         if (!request.password().equals(request.confirmPassword())) {
             throw new IllegalArgumentException("Hasła nie są identyczne");
+        }
+
+        int age = Period.between(request.dateOfBirth(), LocalDate.now()).getYears();
+        if (age < 18) {
+            throw new IllegalArgumentException("Musisz mieć ukończone 18 lat");
+        } else if (age > 100) {
+            throw new IllegalArgumentException("Musisz mieć maksymalnie 100 lat");
         }
 
         if (userRepository.existsByEmail(request.email())) {
@@ -88,10 +99,11 @@ public class AuthService {
                 .build();
         verificationTokenRepository.save(verificationToken);
 
-        emailService.sendVerificationEmail(user.getEmail(), token);
+        emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), token);
     }
 
-    public AuthResponse login(LoginRequest request, HttpServletResponse response) {
+    @Transactional
+    public LoginResponse login(LoginRequest request) {
         var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
@@ -103,13 +115,7 @@ public class AuthService {
                 "role", user.getRole().name()
         ));
 
-        cookieService.addAuthCookie(response, token);
-
-        return userMapper.toAuthResponse(user);
-    }
-
-    public void logout(HttpServletResponse response) {
-        cookieService.clearAuthCookie(response);
+        return new LoginResponse(token, userMapper.toAuthResponse(user));
     }
 
     @Transactional
@@ -127,29 +133,6 @@ public class AuthService {
     }
 
     @Transactional
-    public void resendVerificationEmail(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Nie znaleziono użytkownika"));
-
-        if (user.isVerified()) {
-            throw new IllegalArgumentException("Konto jest już zweryfikowane");
-        }
-
-        verificationTokenRepository.deleteByUserAndTokenType(user, TokenType.EMAIL_VERIFICATION);
-
-        String token = UUID.randomUUID().toString();
-        VerificationToken verificationToken = VerificationToken.builder()
-                .user(user)
-                .token(token)
-                .tokenType(TokenType.EMAIL_VERIFICATION)
-                .expiresAt(LocalDateTime.now().plusHours(24))
-                .build();
-        verificationTokenRepository.save(verificationToken);
-
-        emailService.sendVerificationEmail(user.getEmail(), token);
-    }
-
-    @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
         userRepository.findByEmail(request.email()).ifPresent(user -> {
             verificationTokenRepository.deleteByUserAndTokenType(user, TokenType.PASSWORD_RESET);
@@ -163,7 +146,7 @@ public class AuthService {
                     .build();
             verificationTokenRepository.save(resetToken);
 
-            emailService.sendPasswordResetEmail(user.getEmail(), token);
+            emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), token);
         });
     }
 

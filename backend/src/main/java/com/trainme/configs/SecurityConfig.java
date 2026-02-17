@@ -21,6 +21,14 @@ public class SecurityConfig {
 
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+	private static final String[] PUBLIC_AUTH_ENDPOINTS = {
+		"/api/auth/register",
+		"/api/auth/login",
+		"/api/auth/verify-email",
+		"/api/auth/forgot-password",
+		"/api/auth/reset-password"
+	};
+
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
@@ -34,20 +42,12 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
-			.cors(cors -> {})
-			.csrf(csrf -> csrf.spa())
+			.cors(cors -> cors.disable())
+			.csrf(csrf -> csrf.disable())
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
-				.requestMatchers(
-					"/api/auth/register",
-					"/api/auth/login",
-					"/api/auth/verify-email",
-					"/api/auth/resend-verification",
-					"/api/auth/forgot-password",
-					"/api/auth/reset-password"
-				).permitAll()
-				.requestMatchers("/api/auth/me", "/api/auth/logout").authenticated()
-				.anyRequest().permitAll()
+				.requestMatchers(PUBLIC_AUTH_ENDPOINTS).permitAll()
+				.anyRequest().authenticated()
 			)
 			.formLogin(form -> form.disable())
 			.httpBasic(basic -> basic.disable())
