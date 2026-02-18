@@ -22,11 +22,11 @@ public class SecurityConfig {
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
 	private static final String[] PUBLIC_AUTH_ENDPOINTS = {
-		"/api/auth/register",
-		"/api/auth/login",
-		"/api/auth/verify-email",
-		"/api/auth/forgot-password",
-		"/api/auth/reset-password"
+		"/api/v1/auth/register",
+		"/api/v1/auth/login",
+		"/api/v1/auth/verify-email",
+		"/api/v1/auth/forgot-password",
+		"/api/v1/auth/reset-password"
 	};
 
 	@Bean
@@ -47,6 +47,7 @@ public class SecurityConfig {
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers(PUBLIC_AUTH_ENDPOINTS).permitAll()
+				.requestMatchers("/api/v1/auth/resend-verification").anonymous()
 				.anyRequest().authenticated()
 			)
 			.formLogin(form -> form.disable())

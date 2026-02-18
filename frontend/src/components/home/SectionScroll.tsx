@@ -8,15 +8,35 @@ function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-export default function SectionScroll({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function isInteractiveElement(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return (
+    tag === "BUTTON" ||
+    tag === "A" ||
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    target.isContentEditable
+  );
+}
+
+export default function SectionScroll({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentIndex = useRef(0);
   const isAnimating = useRef(false);
   const touchStartY = useRef(0);
+  const prefersReducedMotion = useRef(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    prefersReducedMotion.current = mql.matches;
+    const onChange = (e: MediaQueryListEvent) => {
+      prefersReducedMotion.current = e.matches;
+    };
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
 
   const scrollToSection = useCallback((index: number) => {
     const container = containerRef.current;
@@ -34,6 +54,14 @@ export default function SectionScroll({
 
     if (distance === 0) {
       isAnimating.current = false;
+      return;
+    }
+
+    if (prefersReducedMotion.current) {
+      container.scrollTop = end;
+      setTimeout(() => {
+        isAnimating.current = false;
+      }, 50);
       return;
     }
 
@@ -87,6 +115,8 @@ export default function SectionScroll({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (isAnimating.current) return;
+
+      if (e.key === " " && isInteractiveElement(e.target)) return;
 
       if (
         e.key === "ArrowDown" ||

@@ -1,11 +1,23 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { logoutAction } from "@/actions/logout";
+import { useToast } from "@/contexts/ToastContext";
 import LogoutIcon from "@/components/icons/LogoutIcon";
 
 export default function LogoutButton({ onVideo }: { onVideo: boolean }) {
+  const router = useRouter();
+  const toast = useToast();
+
+  async function handleLogout() {
+    await logoutAction();
+    toast.success("Wylogowano pomyślnie");
+    router.push("/");
+    router.refresh();
+  }
+
   return (
-    <form action={logoutAction} className="relative h-9 w-9">
+    <form action={handleLogout} className="relative h-9 w-9">
       <button
         type="submit"
         className={`group absolute right-0 top-0 flex h-9 w-9 cursor-pointer items-center justify-start overflow-hidden rounded-full border-2 transition-all duration-300 active:translate-x-0.5 active:translate-y-0.5 hover:w-28 hover:rounded-[20px] ${

@@ -20,6 +20,8 @@ export interface AuthActionState {
   success: boolean;
   fieldErrors?: Record<string, string>;
   globalError?: string;
+  accountNotVerified?: boolean;
+  notVerifiedEmail?: string;
 }
 
 export interface AuthResponse {
@@ -35,4 +37,9 @@ export interface AuthResponse {
 export interface LoginResponse {
   token: string;
   user: AuthResponse;
+}
+
+export interface ResendVerificationState {
+  success: boolean;
+  message: string;
 }

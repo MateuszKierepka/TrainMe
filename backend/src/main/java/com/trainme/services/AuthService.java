@@ -1,18 +1,15 @@
 package com.trainme.services;
 
 import com.trainme.dtos.AuthResponse;
-import com.trainme.dtos.ForgotPasswordRequest;
 import com.trainme.dtos.LoginRequest;
 import com.trainme.dtos.LoginResponse;
 import com.trainme.dtos.RegisterRequest;
-import com.trainme.dtos.ResetPasswordRequest;
 import com.trainme.entities.TrainerProfile;
 import com.trainme.entities.User;
 import com.trainme.entities.VerificationToken;
 import com.trainme.enums.TokenType;
 import com.trainme.enums.UserRole;
 import com.trainme.exceptions.EmailAlreadyExistsException;
-import com.trainme.exceptions.InvalidTokenException;
 import com.trainme.exceptions.PhoneAlreadyExistsException;
 import com.trainme.mappers.UserMapper;
 import com.trainme.repositories.TrainerProfileRepository;
@@ -27,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
@@ -45,6 +43,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final EmailService emailService;
     private final UserMapper userMapper;
+    private final RateLimitService rateLimitService;
 
     @Transactional
     public void register(RegisterRequest request) {
@@ -102,8 +101,12 @@ public class AuthService {
         emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), token);
     }
 
-    @Transactional
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request, String clientIp) {
+        rateLimitService.check(
+                "login:" + clientIp, 10, Duration.ofMinutes(5),
+                "Zbyt wiele prób logowania. Spróbuj ponownie za kilka minut."
+        );
+
         var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
@@ -116,56 +119,6 @@ public class AuthService {
         ));
 
         return new LoginResponse(token, userMapper.toAuthResponse(user));
-    }
-
-    @Transactional
-    public void verifyEmail(String token) {
-        VerificationToken verificationToken = verificationTokenRepository.findByToken(token)
-                .filter(vt -> vt.getTokenType() == TokenType.EMAIL_VERIFICATION)
-                .filter(vt -> vt.getExpiresAt().isAfter(LocalDateTime.now()))
-                .orElseThrow(InvalidTokenException::new);
-
-        User user = verificationToken.getUser();
-        user.setVerified(true);
-        userRepository.save(user);
-
-        verificationTokenRepository.delete(verificationToken);
-    }
-
-    @Transactional
-    public void forgotPassword(ForgotPasswordRequest request) {
-        userRepository.findByEmail(request.email()).ifPresent(user -> {
-            verificationTokenRepository.deleteByUserAndTokenType(user, TokenType.PASSWORD_RESET);
-
-            String token = UUID.randomUUID().toString();
-            VerificationToken resetToken = VerificationToken.builder()
-                    .user(user)
-                    .token(token)
-                    .tokenType(TokenType.PASSWORD_RESET)
-                    .expiresAt(LocalDateTime.now().plusMinutes(15))
-                    .build();
-            verificationTokenRepository.save(resetToken);
-
-            emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), token);
-        });
-    }
-
-    @Transactional
-    public void resetPassword(ResetPasswordRequest request) {
-        if (!request.newPassword().equals(request.confirmNewPassword())) {
-            throw new IllegalArgumentException("Hasła nie są identyczne");
-        }
-
-        VerificationToken verificationToken = verificationTokenRepository.findByToken(request.token())
-                .filter(vt -> vt.getTokenType() == TokenType.PASSWORD_RESET)
-                .filter(vt -> vt.getExpiresAt().isAfter(LocalDateTime.now()))
-                .orElseThrow(InvalidTokenException::new);
-
-        User user = verificationToken.getUser();
-        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
-        userRepository.save(user);
-
-        verificationTokenRepository.delete(verificationToken);
     }
 
     public AuthResponse getCurrentUser(CustomUserDetails userDetails) {

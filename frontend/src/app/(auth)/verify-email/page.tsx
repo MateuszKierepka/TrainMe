@@ -2,11 +2,7 @@ import Link from "next/link";
 import { CheckCircle, XCircle } from "lucide-react";
 import { backendFetch, ApiError } from "@/lib/api-client";
 
-export default async function VerifyEmailPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ token?: string }>;
-}) {
+export default async function VerifyEmailPage({searchParams}: {searchParams: Promise<{ token?: string }>}) {
   const { token } = await searchParams;
 
   let success = false;
@@ -16,7 +12,7 @@ export default async function VerifyEmailPage({
     message = "Brak tokenu weryfikacyjnego.";
   } else {
     try {
-      await backendFetch(`/api/auth/verify-email?token=${encodeURIComponent(token)}`, {
+      await backendFetch(`/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`, {
         method: "POST",
       });
       success = true;

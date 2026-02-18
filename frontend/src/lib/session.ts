@@ -6,7 +6,7 @@ import type { AuthResponse } from "@/types/api";
 export const getCurrentUser = cache(
   async (): Promise<AuthResponse | null> => {
     try {
-      const response = await backendFetch("/api/auth/me", {
+      const response = await backendFetch("/api/v1/auth/me", {
         authenticated: true,
       });
       return await response.json();

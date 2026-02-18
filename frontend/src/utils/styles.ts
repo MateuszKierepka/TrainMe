@@ -1,5 +1,5 @@
 export function inputClassName(touched: boolean, hasError: boolean, extra = "") {
-  const base = "block w-full rounded-lg border bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:ring-1 focus:outline-none";
+  const base = "block w-full rounded-lg border bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:ring-1 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500";
   const border = touched && hasError
     ? "border-red-500 focus:border-red-500 focus:ring-red-500"
     : touched && !hasError

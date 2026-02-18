@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import localFont from "next/font/local";
 import { ToastProvider } from "@/contexts/ToastContext";
 import "./globals.css";
@@ -14,17 +15,15 @@ export const metadata: Metadata = {
   description: "Platforma łącząca trenerów personalnych z klientami. Znajdź trenera, zarezerwuj trening i osiągaj swoje cele fitness.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pl">
       <body
         className={`${anta.className} antialiased`}
       >
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          <Suspense>{children}</Suspense>
+        </ToastProvider>
       </body>
     </html>
   );

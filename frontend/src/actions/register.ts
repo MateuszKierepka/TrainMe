@@ -6,9 +6,7 @@ import { registerSchema } from "@/validations/register";
 import { backendFetch, ApiError } from "@/lib/api-client";
 import type { AuthActionState, RegisterRequest } from "@/types/api";
 
-export async function registerAction(
-  formData: FormData,
-): Promise<AuthActionState> {
+export async function registerAction(formData: FormData): Promise<AuthActionState> {
   const raw = {
     role: formData.get("role") as string,
     email: formData.get("email") as string,
@@ -49,7 +47,7 @@ export async function registerAction(
   };
 
   try {
-    await backendFetch("/api/auth/register", {
+    await backendFetch("/api/v1/auth/register", {
       method: "POST",
       body: JSON.stringify(body),
     });
@@ -95,8 +93,17 @@ export async function registerAction(
   const cookieStore = await cookies();
   cookieStore.set("register_success", "1", {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
     maxAge: 60,
     path: "/register/success",
+  });
+  cookieStore.set("resend_email", body.email, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/register/success",
+    maxAge: 300,
   });
 
   return { success: true };

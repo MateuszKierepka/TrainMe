@@ -3,8 +3,7 @@ import Link from "next/link";
 const navigation = [
   { href: "/", label: "Strona główna" },
   { href: "/trainers", label: "Znajdź trenera" },
-  { href: "/about", label: "O nas" },
-  { href: "/chat", label: "Czat" },
+  { href: "/about", label: "O nas" }
 ];
 
 const legal = [
@@ -65,8 +64,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-4 border-t border-gray-800 pt-4 text-center text-xs text-gray-500">
-          &copy; {new Date().getFullYear()} TrainMe. Wszelkie prawa
-          zastrzeżone.
+          &copy; {new Date().getFullYear()} TrainMe. Wszelkie prawa zastrzeżone.
         </div>
       </div>
     </footer>
