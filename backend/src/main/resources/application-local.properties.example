@@ -1,0 +1,9 @@
+spring.jpa.hibernate.ddl-auto=update
+
+spring.datasource.username=
+spring.datasource.password=
+
+jwt.secret=
+
+spring.mail.username=
+spring.mail.password=
