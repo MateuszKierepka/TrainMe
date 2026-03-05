@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -24,7 +25,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "verification_tokens")
+@Table(name = "verification_tokens", indexes = {@Index
+        (name = "idx_vt_user_token_type", columnList = "user_id, token_type")
+})
 @NoArgsConstructor @AllArgsConstructor @Getter @Setter
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)

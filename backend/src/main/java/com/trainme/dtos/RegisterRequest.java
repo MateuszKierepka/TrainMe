@@ -20,6 +20,7 @@ public record RegisterRequest(
                 regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).{8,}$",
                 message = "Min. 8 znaków, 1 duża litera, 1 mała litera, 1 cyfra, 1 znak specjalny"
         )
+        @Size(max = 128, message = "Hasło może mieć maksymalnie 128 znaków")
         String password,
 
         @NotBlank(message = "Potwierdzenie hasła jest wymagane")

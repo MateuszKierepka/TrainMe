@@ -10,12 +10,18 @@ import type { AuthActionState } from "@/types/api";
 
 const loginResponseSchema = z.object({
   token: z.string(),
+  user: z.object({
+    id: z.string(),
+    email: z.string(),
+    firstName: z.string(),
+    lastName: z.string(),
+    role: z.enum(["CLIENT", "TRAINER", "ADMIN"]),
+    photoUrl: z.string().nullable(),
+    verified: z.boolean(),
+  }),
 });
 
-export async function loginAction(
-  _prevState: AuthActionState,
-  formData: FormData,
-): Promise<AuthActionState> {
+export async function loginAction(_prevState: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const raw = {
     email: formData.get("email") as string,
     password: formData.get("password") as string,
@@ -35,7 +41,7 @@ export async function loginAction(
   }
 
   try {
-    const response = await backendFetch("/api/auth/login", {
+    const response = await backendFetch("/api/v1/auth/login", {
       method: "POST",
       body: JSON.stringify(result.data),
     });
@@ -50,6 +56,14 @@ export async function loginAction(
     await setAuthCookie(parsed.data.token);
   } catch (error) {
     if (error instanceof ApiError) {
+      if (error.status === 403 && error.body.message.includes("zweryfikowane")) {
+        return {
+          success: false,
+          globalError: error.body.message,
+          accountNotVerified: true,
+          notVerifiedEmail: result.data.email,
+        };
+      }
       return { success: false, globalError: error.body.message };
     }
 

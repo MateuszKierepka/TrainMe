@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import LogoutButton from "@/components/auth/LogoutButton";
 import { logoutAction } from "@/actions/logout";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 
 const navLinks = [
   { href: "/", label: "Strona główna" },
@@ -16,6 +18,8 @@ const navLinks = [
 
 export default function Navbar() {
   const { user } = useAuth();
+  const router = useRouter();
+  const toast = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [onVideo, setOnVideo] = useState(true);
 
@@ -154,19 +158,23 @@ export default function Navbar() {
               }`}
             >
               {user ? (
-                <form action={logoutAction}>
-                  <button
-                    type="submit"
-                    className={`block w-full rounded-lg px-3 py-2 text-center text-sm font-medium border transition-all ${
-                      onVideo
-                        ? "text-white border-white/30 hover:bg-white/20 hover:border-white"
-                        : "text-gray-900 border-gray-300 hover:bg-gray-900/10 hover:border-gray-900"
-                    }`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Wyloguj się
-                  </button>
-                </form>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logoutAction();
+                    setMobileMenuOpen(false);
+                    toast.success("Wylogowano pomyślnie");
+                    router.push("/");
+                    router.refresh();
+                  }}
+                  className={`block w-full rounded-lg px-3 py-2 text-center text-sm font-medium border transition-all ${
+                    onVideo
+                      ? "text-white border-white/30 hover:bg-white/20 hover:border-white"
+                      : "text-gray-900 border-gray-300 hover:bg-gray-900/10 hover:border-gray-900"
+                  }`}
+                >
+                  Wyloguj się
+                </button>
               ) : (
                 <>
                   <Link

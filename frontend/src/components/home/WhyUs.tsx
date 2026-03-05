@@ -1,26 +1,26 @@
-import { ShieldCheck, MessageCircle, CreditCard, Star } from "lucide-react";
+import { ShieldCheck, CalendarCog, CreditCard, Star } from "lucide-react";
 import StaggerReveal from "@/components/ui/StaggerReveal";
 
 const features = [
   {
     icon: ShieldCheck,
-    title: "Zweryfikowani trenerzy",
-    description: "Każdy trener przechodzi proces weryfikacji. Możesz być pewien, że trenujesz z profesjonalistą.",
+    title: "Zweryfikowani profesjonaliści",
+    description: "Każdy trener przechodzi weryfikację kwalifikacji. Klienci trenują z profesjonalistami, a trenerzy budują wiarygodność.",
   },
   {
-    icon: MessageCircle,
-    title: "Bezpośredni kontakt",
-    description: "Wbudowany czat pozwala na szybką komunikację z trenerem. Zadawaj pytania i ustalaj szczegóły.",
+    icon: CalendarCog,
+    title: "Inteligentny kalendarz",
+    description: "Klienci rezerwują terminy online, a trenerzy zarządzają grafikiem w jednym miejscu. Koniec z chaosem w ustalaniu terminów.",
   },
   {
     icon: CreditCard,
-    title: "Wygodne płatności",
-    description: "Płać online przez Stripe lub gotówką na miejscu. Wybierz sposób płatności, który Ci odpowiada.",
+    title: "Bezpieczne płatności",
+    description: "Płatności online przez Stripe lub gotówką na miejscu. Klienci płacą wygodnie, trenerzy otrzymują środki szybko i bezpiecznie.",
   },
   {
     icon: Star,
-    title: "Opinie użytkowników",
-    description: "Sprawdź oceny i opinie innych klientów, aby wybrać najlepszego trenera dla siebie.",
+    title: "Opinie i reputacja",
+    description: "System ocen pomaga klientom wybrać najlepszego trenera, a trenerom budować markę i przyciągać nowych klientów.",
   },
 ];
 
@@ -33,7 +33,8 @@ export default function WhyUs() {
             Dlaczego TrainMe?
           </h2>
           <p className="mt-4 text-lg text-gray-600">
-            Platforma stworzona z myślą o Twoim komforcie i bezpieczeństwie
+            Narzędzia, które pomagają klientom osiągać cele, a trenerom
+            rozwijać biznes
           </p>
         </div>
 

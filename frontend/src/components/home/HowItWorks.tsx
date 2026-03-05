@@ -1,25 +1,65 @@
-import { Search, CalendarCheck, Dumbbell } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import {
+  Search,
+  CalendarCheck,
+  Dumbbell,
+  UserPlus,
+  CalendarCog,
+  TrendingUp,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import StaggerReveal from "@/components/ui/StaggerReveal";
 
-const steps = [
+interface Step {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+const clientSteps: Step[] = [
   {
     icon: Search,
     title: "Znajdź trenera",
-    description: "Przeglądaj profile trenerów, filtruj po lokalizacji, specjalizacji i cenie. Wybierz idealnego trenera dla siebie.",
+    description: "Przeglądaj profile trenerów, filtruj po specjalizacji, lokalizacji i cenie. Wybierz idealnego trenera dla siebie.",
   },
   {
     icon: CalendarCheck,
-    title: "Zarezerwuj trening",
-    description: "Sprawdź dostępność trenera w kalendarzu i zarezerwuj termin, który Ci odpowiada. Szybko i wygodnie.",
+    title: "Zarezerwuj termin",
+    description: "Sprawdź dostępność w kalendarzu i zarezerwuj trening jednym kliknięciem. Szybko i wygodnie.",
   },
   {
     icon: Dumbbell,
     title: "Trenuj i osiągaj cele",
-    description: "Ćwicz pod okiem profesjonalisty, śledź postępy i osiągaj swoje cele fitness szybciej niż kiedykolwiek.",
+    description: "Ćwicz pod okiem profesjonalisty, śledź swoje postępy i osiągaj cele szybciej niż kiedykolwiek.",
   },
 ];
 
+const trainerSteps: Step[] = [
+  {
+    icon: UserPlus,
+    title: "Stwórz profil",
+    description: "Załóż konto, dodaj swoje specjalizacje, doświadczenie i cennik. Pokaż klientom, co Cię wyróżnia.",
+  },
+  {
+    icon: CalendarCog,
+    title: "Zarządzaj grafikiem",
+    description: "Ustaw swoją dostępność w kalendarzu. Klienci rezerwują terminy, a Ty masz pełną kontrolę nad harmonogramem.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Rozwijaj biznes",
+    description: "Zdobywaj klientów, zbieraj opinie i buduj swoją reputację. TrainMe pomaga Ci rosnąć.",
+  },
+];
+
+type Tab = "client" | "trainer";
+
 export default function HowItWorks() {
+  const [activeTab, setActiveTab] = useState<Tab>("client");
+  const steps = activeTab === "client" ? clientSteps : trainerSteps;
+
   return (
     <section className="h-screen flex items-center bg-gray-100 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl w-full">
@@ -28,11 +68,37 @@ export default function HowItWorks() {
             Jak to działa?
           </h2>
           <p className="mt-4 text-lg text-gray-600">
-            Trzy proste kroki do lepszej formy
+            Prosta ścieżka dla klientów i trenerów
           </p>
         </div>
 
-        <StaggerReveal className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 flex justify-center gap-2">
+          <button
+            onClick={() => setActiveTab("client")}
+            className={`rounded-full px-6 py-2 text-sm font-semibold transition-all duration-300 ${
+              activeTab === "client"
+                ? "bg-black text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            Dla klientów
+          </button>
+          <button
+            onClick={() => setActiveTab("trainer")}
+            className={`rounded-full px-6 py-2 text-sm font-semibold transition-all duration-300 ${
+              activeTab === "trainer"
+                ? "bg-black text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            Dla trenerów
+          </button>
+        </div>
+
+        <StaggerReveal
+          key={activeTab}
+          className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {steps.map((step) => (
             <div
               key={step.title}

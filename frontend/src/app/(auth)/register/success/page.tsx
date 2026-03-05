@@ -1,15 +1,20 @@
+import { connection } from "next/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, Mail } from "lucide-react";
+import { ResendVerificationButton } from "@/components/auth/ResendVerificationButton";
 
 export default async function RegisterSuccessPage() {
+  await connection();
   const cookieStore = await cookies();
   const flash = cookieStore.get("register_success");
 
   if (!flash) {
     redirect("/register");
   }
+
+  const resendEmail = cookieStore.get("resend_email")?.value;
 
   return (
     <div className="flex min-h-screen items-center justify-center px-6 py-12">
@@ -38,13 +43,24 @@ export default async function RegisterSuccessPage() {
           Przejdź do logowania
         </Link>
 
-        <p className="mt-6 text-sm text-gray-400">
-          Nie otrzymałeś wiadomości? Sprawdź folder spam. Jeśli problem się powtarza,{" "}
-          <Link href="/contact" className="text-gray-900 underline hover:text-gray-600">
-            skontaktuj się z nami
-          </Link>
-          .
-        </p>
+        <div className="mt-6">
+          <p className="text-sm text-gray-400">
+            Nie otrzymałeś wiadomości? Sprawdź folder spam.
+          </p>
+          {resendEmail ? (
+            <div className="mt-3 flex justify-center">
+              <ResendVerificationButton email={resendEmail} />
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-gray-400">
+              Jeśli potrzebujesz nowego linku, przejdź do{" "}
+              <Link href="/login" className="text-gray-900 underline hover:text-gray-600">
+                logowania
+              </Link>
+              .
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

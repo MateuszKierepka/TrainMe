@@ -9,7 +9,6 @@ import {
   useState,
   useRef,
 } from "react";
-import { usePathname } from "next/navigation";
 import Toast, { type ToastData, type ToastType } from "@/components/ui/Toast";
 
 const TOAST_DURATION = 5000;
@@ -24,43 +23,10 @@ interface ToastActions {
 }
 
 const ToastContext = createContext<ToastActions | null>(null);
-const FLASH_COOKIE_NAME = "flash_toast";
-const VALID_TOAST_TYPES = new Set<ToastType>(["success", "error", "info", "warning"]);
-
-function consumeFlashCookie(): { type: ToastType; message: string } | null {
-  if (typeof document === "undefined") return null;
-
-  const match = document.cookie.match(
-    new RegExp(`(?:^|;\\s*)${FLASH_COOKIE_NAME}=([^;]+)`),
-  );
-  if (!match) return null;
-
-  document.cookie = `${FLASH_COOKIE_NAME}=; path=/; max-age=0; samesite=lax`;
-
-  try {
-    const data: unknown = JSON.parse(decodeURIComponent(match[1]));
-    if (
-      typeof data === "object" &&
-      data !== null &&
-      "type" in data &&
-      "message" in data &&
-      typeof (data as { type: unknown }).type === "string" &&
-      typeof (data as { message: unknown }).message === "string" &&
-      VALID_TOAST_TYPES.has((data as { type: string }).type as ToastType)
-    ) {
-      const { type, message } = data as { type: ToastType; message: string };
-      return { type, message: message.slice(0, 200) };
-    }
-  } catch {
-    // ignoring invalid cookie data
-  }
-  return null;
-}
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const pathname = usePathname();
 
   const dismiss = useCallback((id: string) => {
     const timer = timersRef.current.get(id);
@@ -105,13 +71,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       timers.clear();
     };
   }, []);
-
-  useEffect(() => {
-    const flash = consumeFlashCookie();
-    if (flash) {
-      queueMicrotask(() => addToast(flash.type, flash.message));
-    }
-  }, [pathname, addToast]);
 
   const actions = useMemo<ToastActions>(
     () => ({

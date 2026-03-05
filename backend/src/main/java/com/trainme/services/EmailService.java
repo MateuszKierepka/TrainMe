@@ -2,6 +2,7 @@ package com.trainme.services;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+@Slf4j
 @Service
 public class EmailService {
 
@@ -64,7 +66,7 @@ public class EmailService {
             helper.setText(htmlBody, true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("Nie udało się wysłać e-maila", e);
+            log.error("Nie udało się wysłać e-maila do {}", to, e);
         }
     }
 }
